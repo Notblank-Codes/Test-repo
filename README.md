@@ -30,3 +30,6 @@ Ingest sample data, build a small ETL pipeline, and produce a dashboard showing 
 - [ ] Implement ETL script
 - [ ] Add tests + CI
 - [ ] Create simple dashboard
+
+## CLI Interface
+<img width="1009" height="1225" alt="image" src="https://github.com/user-attachments/assets/90d629f2-c7d9-449f-9d53-0902f66d7814" />
