@@ -1,0 +1,202 @@
+/* =============================================================
+   style.css — all the look and feel.
+
+   Colours are defined once as "tokens" (CSS variables) at the top.
+   Dark mode just swaps the token values, so every component
+   automatically works in both themes.
+   Palette idea: Naija green + Ankara-style warm accents.
+   Kept light on purpose: no images, no web fonts, few animations,
+   so it stays fast on low-end Android phones.
+   ============================================================= */
+
+:root {
+  --green: #008751;       /* Nigerian flag green */
+  --green-dark: #006b40;
+  --orange: #ff7a1a;
+  --yellow: #ffc83d;
+  --magenta: #d6336c;
+  --purple: #6f42c1;
+
+  --bg: #fdf8ef;          /* warm off-white */
+  --surface: #ffffff;
+  --surface-2: #f3ece0;
+  --text: #1c1b18;
+  --muted: #6b665c;
+  --border: #e6dccb;
+  --ok: #138a4b;
+  --bad: #c92a2a;
+  --shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+
+  --radius: 16px;
+  --tap: 52px;            /* minimum height for touch targets */
+
+  color-scheme: light;
+}
+
+/* Dark theme: same names, different values. */
+:root[data-theme="dark"] {
+  --bg: #13140f;
+  --surface: #1e1f19;
+  --surface-2: #2a2b23;
+  --text: #f4efe4;
+  --muted: #b3ab9b;
+  --border: #36372e;
+  --ok: #3ddc84;
+  --bad: #ff6b6b;
+  --shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg);
+  /* A light Ankara-ish zigzag strip at the top, drawn with CSS only. */
+  background-image:
+    linear-gradient(135deg, var(--orange) 25%, transparent 25%),
+    linear-gradient(225deg, var(--yellow) 25%, transparent 25%);
+  background-size: 24px 12px;
+  background-repeat: repeat-x;
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px 8px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 1.3rem;
+}
+.logo {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--green);
+  font-size: 1.2rem;
+}
+.topbar-actions { display: flex; gap: 8px; }
+
+/* ---------- Layout ---------- */
+main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 16px 48px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.hero {
+  background: var(--green);
+  border-color: var(--green-dark);
+  color: #fff;
+}
+.hero .muted { color: rgba(255, 255, 255, 0.85); }
+h1, h2, h3 { margin: 0 0 8px; line-height: 1.2; }
+h1 { font-size: 1.8rem; }
+h2 { font-size: 1.25rem; }
+p { margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.center { text-align: center; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--green);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--green-dark);
+  transition: transform 0.06s;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--green-dark); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.secondary { background: var(--surface-2); color: var(--text); box-shadow: 0 4px 0 var(--border); }
+.btn.warm { background: var(--orange); box-shadow: 0 4px 0 #c45a0c; }
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+button:focus-visible, input:focus-visible, a:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+/* ---------- Setup check list (milestone a) ---------- */
+.checks { list-style: none; padding: 0; margin: 0; }
+.check {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.check:last-child { border-bottom: 0; }
+.check .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--border); }
+.check.ok .dot { background: var(--ok); }
+.check.bad .dot { background: var(--bad); }
+.check-status { grid-column: 2; font-size: 0.9rem; color: var(--muted); }
+.check.bad .check-status { color: var(--bad); }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translate(-50%, 120px);
+  max-width: calc(100% - 32px);
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+  transition: transform 0.2s;
+  z-index: 50;
+}
+.toast.show { transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

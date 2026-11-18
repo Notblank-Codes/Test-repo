@@ -1,0 +1,5 @@
+# Firebase emulator and CLI logs
+*-debug.log
+.firebase/
+node_modules/
+.DS_Store
