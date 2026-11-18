@@ -16,13 +16,13 @@ export const APP_NAME = 'FlashGames';
 export const APP_TAGLINE = 'Party games for the squad. No download, no wahala.';
 
 export const firebaseConfig = {
-  apiKey: 'PASTE_YOUR_API_KEY',
-  authDomain: 'PASTE_YOUR_PROJECT.firebaseapp.com',
-  databaseURL: 'https://PASTE_YOUR_PROJECT-default-rtdb.firebaseio.com',
-  projectId: 'PASTE_YOUR_PROJECT',
-  storageBucket: 'PASTE_YOUR_PROJECT.appspot.com',
-  messagingSenderId: 'PASTE_YOUR_SENDER_ID',
-  appId: 'PASTE_YOUR_APP_ID',
+  apiKey: 'AIzaSyDhRMp5vLjZ8-Jv8tS_aiVlL_MqvQrOuyc',
+  authDomain: 'flashgames-5b774.firebaseapp.com',
+  databaseURL: 'https://flashgames-5b774-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'flashgames-5b774',
+  storageBucket: 'flashgames-5b774.firebasestorage.app',
+  messagingSenderId: '657706947440',
+  appId: '1:657706947440:web:270cefdae630416691f5b5',
 };
 
 // Local testing with the Firebase Emulator (see README, "Test locally").
