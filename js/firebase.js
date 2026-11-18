@@ -17,11 +17,28 @@ import {
 
 import { firebaseConfig, EMULATOR } from './config.js';
 
+// Re-export the database functions the rest of the app uses, so the
+// SDK version number lives in this one file only.
+export {
+  ref, get, set, update, remove, onValue, off, onDisconnect,
+  serverTimestamp, runTransaction, child,
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
 // Use the local emulator only on localhost AND when ?emulator=1 is in the URL.
 // This can never switch on by accident on the live github.io site.
+// We remember the choice for this tab (sessionStorage), so it survives the
+// address changing to ?room=ABCDE and page refreshes.
 const params = new URLSearchParams(location.search);
 const isLocalhost = ['localhost', '127.0.0.1'].includes(location.hostname);
-export const usingEmulator = isLocalhost && params.get('emulator') === '1';
+function emulatorRequested() {
+  try {
+    if (params.get('emulator') === '1') sessionStorage.setItem('fg.emulator', '1');
+    return sessionStorage.getItem('fg.emulator') === '1';
+  } catch {
+    return params.get('emulator') === '1';
+  }
+}
+export const usingEmulator = isLocalhost && emulatorRequested();
 
 // The emulator does not care about real keys, so give it a dummy project.
 const config = usingEmulator

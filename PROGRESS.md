@@ -13,7 +13,7 @@ This file is the hand-over note. Anyone (or any new Claude session) picking up t
 ## Milestones
 
 - [x] **(a) Project setup and Firebase connection.** Static page, theme, Firebase SDK from CDN, anonymous sign-in, live connection check, server time, emulator support, setup check screen.
-- [ ] **(b) Home, rooms and lobby.** Nickname + emoji avatar, create/join with 5-letter code, `?room=` links, WhatsApp share, live player list, ready status, kick, host promotion, rejoin after refresh.
+- [x] **(b) Home, rooms and lobby.** Nickname + emoji avatar, nickname filter, create/join with 5-letter code, `?room=` links, copy/WhatsApp/native share, live player list, ready status, kick (kicked players can't rejoin), presence, host promotion after 6 s offline, rejoin after refresh, room rules.
 - [ ] **(c) Plugin system.** `games/registry.js`, game interface, game picker with categories, host-referee engine, shared timer, scoreboard, winner screen, play again, sound toggle, how-to-play popup.
 - [ ] **(d) Game 1: Naija Herd Mentality.** 60+ questions in JSON, answer normalising and fuzzy matching.
 - [ ] **(e) Solo mode and bots.**
@@ -41,6 +41,9 @@ This file is the hand-over note. Anyone (or any new Claude session) picking up t
 
 ## Notes for whoever continues
 
+- Data model: `rooms/<CODE>/meta` (hostUid, createdAt, status, gameId, settings), `rooms/<CODE>/players/<uid>`, `rooms/<CODE>/kicked/<uid>`. Only room members can read a room; only the host can change meta.
+- Host promotion is client-side: the earliest-joined online human takes over when the host has been offline for 6 s (`HOST_GRACE_MS` in room.js); the rules allow taking over only when the host is offline or gone.
+- Firebase project: `flashgames-5b774` (database in europe-west1). Rules must be re-published in the console every time `firebase/database.rules.json` changes.
 - Repo: `Notblank-Codes/Test-repo`, work happens on branch `flashgames`.
 - Live site will be `https://notblank-codes.github.io/Test-repo/`.
 - Firebase SDK version is pinned in `js/firebase.js` (10.12.2). Change all three import URLs together.

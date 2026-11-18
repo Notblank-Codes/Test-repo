@@ -1,114 +1,113 @@
 // =============================================================
-// app.js — the starting point of the app.
+// app.js — the starting point of the app (index.html loads it).
 //
-// index.html loads this file. It applies the saved theme, then
-// (for milestone a) runs a connection check so you can see that
-// Firebase sign-in and the database both work.
-// Later milestones replace the check with the real home screen.
+// It decides which screen to show:
+//   ?check=1        -> the setup check (check.js)
+//   in a room       -> the lobby (lobby.js)
+//   otherwise       -> the home screen (home.js)
+// and it handles rejoining your room after a page refresh.
 // =============================================================
 
-import { APP_NAME, APP_TAGLINE, isFirebaseConfigured } from './config.js';
-import { el, mount, toast } from './ui.js';
+import { APP_NAME, isFirebaseConfigured } from './config.js';
+import { el, mount, toast, showModal } from './ui.js';
+import { load, save } from './storage.js';
 
 const app = document.getElementById('app');
+const params = new URLSearchParams(location.search);
 document.title = APP_NAME;
 document.getElementById('brand-name').textContent = APP_NAME;
 
 // ---------- Light / dark mode ----------
-// Saved in localStorage so it is remembered next time.
-// Wrapped in try/catch because some private browsers block storage.
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  try { localStorage.setItem('fg.theme', theme); } catch { /* ignore */ }
+  save('theme', theme);
 }
-function currentTheme() {
-  try {
-    const saved = localStorage.getItem('fg.theme');
-    if (saved) return saved;
-  } catch { /* ignore */ }
-  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-applyTheme(currentTheme());
+applyTheme(load('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 document.getElementById('theme-btn').addEventListener('click', () => {
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 });
 
-// ---------- Milestone (a): connection check ----------
-// One row per check, with a status dot that turns green when it passes.
-function checkRow(label) {
-  const status = el('span', { class: 'check-status' }, 'checking…');
-  const row = el('li', { class: 'check' }, el('span', { class: 'dot' }), el('span', {}, label), status);
-  return {
-    row,
-    pass(text = 'OK') { row.classList.add('ok'); status.textContent = text; },
-    fail(text) { row.classList.add('bad'); status.textContent = text; },
-  };
+// ---------- Address bar helpers ----------
+// We keep ?room=ABCDE in the address while you are in a room, so a
+// refresh brings you straight back, and the link can be copied.
+function setRoomInUrl(code) {
+  const url = code ? `${location.pathname}?room=${code}` : location.pathname;
+  history.replaceState(null, '', url);
 }
 
-async function runConnectionCheck() {
-  const configRow = checkRow('Firebase config');
-  const authRow = checkRow('Anonymous sign-in');
-  const liveRow = checkRow('Live connection');
-  const writeRow = checkRow('Database write + read');
+// ---------- Start ----------
+let homeModule;   // home.js, loaded in start()
+let lobbyModule;  // lobby.js, loaded in start()
 
-  mount(app,
-    el('section', { class: 'card hero' },
-      el('h1', {}, APP_NAME),
-      el('p', { class: 'muted' }, APP_TAGLINE)),
-    el('section', { class: 'card' },
-      el('h2', {}, 'Setup check'),
-      el('ul', { class: 'checks' }, configRow.row, authRow.row, liveRow.row, writeRow.row)),
-  );
-
-  // Load firebase.js only now, so a missing config shows a clear message
-  // instead of a crash.
-  const emulatorRequested = new URLSearchParams(location.search).get('emulator') === '1';
-  if (!isFirebaseConfigured() && !emulatorRequested) {
-    configRow.fail('not set: paste your config into js/config.js');
-    return;
+async function start() {
+  if (params.has('check') || !isFirebaseConfigured()) {
+    const { runConnectionCheck } = await import('./check.js');
+    return runConnectionCheck(app);
   }
-  const fb = await import('./firebase.js');
-  const { ref, set, get, serverTimestamp } =
-    await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
-  configRow.pass(fb.usingEmulator ? 'using local emulator' : 'OK');
 
+  // Load the Firebase-dependent modules only after the config check.
+  // They are small, so we load them all at once, in parallel.
+  const [{ signIn }, room] = await Promise.all([import('./firebase.js'), import('./room.js')]);
+  [homeModule, lobbyModule] = await Promise.all([import('./home.js'), import('./lobby.js')]);
+
+  let uid;
   try {
-    const uid = await fb.signIn();
-    authRow.pass(`OK (you are ${uid.slice(0, 6)}…)`);
-
-    fb.onConnectionChange((online) => {
-      if (online) { liveRow.row.classList.remove('bad'); liveRow.pass('online'); }
-      else { liveRow.row.classList.remove('ok'); liveRow.fail('offline'); }
-    });
-
-    // Write the server time to connectionTest/<uid>, then read it back.
-    const testRef = ref(fb.db, `connectionTest/${uid}`);
-    await set(testRef, serverTimestamp());
-    const snap = await get(testRef);
-    const drift = Math.round((fb.serverNow() - snap.val()) / 1000);
-    writeRow.pass(`OK (server time check: ${Math.abs(drift)}s)`);
-    toast('Firebase is working 🎉');
+    uid = await signIn();
   } catch (err) {
     console.error(err);
-    const failing = authRow.row.classList.contains('ok') ? writeRow : authRow;
-    failing.fail(friendlyError(err));
+    mount(app, el('section', { class: 'card' },
+      el('h2', {}, "Can't connect 😕"),
+      el('p', {}, 'Check your internet connection and refresh the page.'),
+      el('a', { class: 'btn secondary', href: './?check=1' }, 'Run setup check')));
+    return;
   }
+
+  // Which room should we be in? A ?room= link wins; otherwise the room
+  // saved from last time (for when the address was lost).
+  const invited = room.normalizeCode(params.get('room'));
+  const lastRoom = load('lastRoom');
+  const candidate = room.isValidCode(invited) ? invited : lastRoom;
+
+  if (candidate && await room.stillInRoom(candidate)) {
+    // Rejoin silently: we never left this room (we just refreshed).
+    return enterRoom(candidate, uid, room);
+  }
+  save('lastRoom', null);
+  showHome(room.isValidCode(invited) ? invited : '', uid, room);
 }
 
-// Turn Firebase error codes into advice a human can act on.
-function friendlyError(err) {
-  const code = err && err.code ? err.code : String(err);
-  if (code.includes('operation-not-allowed') || code.includes('admin-restricted')) {
-    return 'Anonymous sign-in is not enabled in Firebase (README step 3)';
-  }
-  if (code.includes('unauthorized-domain')) {
-    return 'This website is not in Firebase "Authorized domains" (README step 6)';
-  }
-  if (code.includes('PERMISSION_DENIED') || code.includes('permission')) {
-    return 'Blocked by database rules: publish firebase/database.rules.json (README step 5)';
-  }
-  if (code.includes('api-key')) return 'The apiKey in js/config.js looks wrong';
-  return code;
+function showHome(invitedCode, uid, room) {
+  setRoomInUrl(invitedCode || null);
+  const { renderHome } = homeModule;
+  renderHome(app, {
+    invitedCode,
+    onCreate: async (profile) => enterRoom(await room.createRoom(profile), uid, room),
+    onJoin: async (code, profile) => enterRoom(await room.joinRoom(code, profile), uid, room),
+  });
 }
 
-runConnectionCheck();
+function enterRoom(code, uid, room) {
+  save('lastRoom', code);
+  setRoomInUrl(code);
+  mount(app, el('p', { class: 'muted center' }, `Joining room ${code}…`));
+
+  const session = new room.RoomSession(code, uid, {
+    onUpdate: () => lobbyModule.renderLobby(app, session, { onLeave: () => leave() }),
+    onRemoved: (reason) => {
+      save('lastRoom', null);
+      showHome('', uid, room);
+      showModal({ title: 'Back to home', body: [el('p', {}, reason)] });
+    },
+  });
+
+  async function leave() {
+    await session.leave();
+    save('lastRoom', null);
+    showHome('', uid, room);
+    toast('You left the room');
+  }
+
+  session.start();
+}
+
+start();

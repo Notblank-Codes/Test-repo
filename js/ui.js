@@ -41,3 +41,47 @@ export function toast(message, ms = 2500) {
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => box.classList.remove('show'), ms);
 }
+
+/**
+ * Show a popup over the page. Returns a function that closes it.
+ *   showModal({ title: 'Kick Tunde?', body: [el('p', {}, '...')],
+ *               actions: [{ label: 'Kick', onClick: doKick }, { label: 'Cancel' }] })
+ * Every action closes the popup after running its onClick.
+ */
+export function showModal({ title, body = [], actions = [{ label: 'OK' }] }) {
+  const close = () => overlay.remove();
+  const buttons = actions.map(({ label, onClick, style = '' }) =>
+    el('button', {
+      class: `btn ${style}`,
+      type: 'button',
+      onclick: () => { close(); if (onClick) onClick(); },
+    }, label));
+  const dialog = el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+    el('h2', {}, title),
+    el('div', { class: 'modal-body' }, body),
+    el('div', { class: 'stack' }, buttons));
+  const overlay = el('div', {
+    class: 'overlay',
+    onclick: (event) => { if (event.target === overlay) close(); },
+  }, dialog);
+  document.body.append(overlay);
+  buttons[0]?.focus();
+  return close;
+}
+
+/** Copy text to the clipboard. Returns true if it worked. */
+export async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Older browsers: select the text in a hidden box and copy it.
+    const box = el('textarea', { readonly: true, style: 'position:fixed;opacity:0' });
+    box.value = text;
+    document.body.append(box);
+    box.select();
+    const ok = document.execCommand('copy');
+    box.remove();
+    return ok;
+  }
+}

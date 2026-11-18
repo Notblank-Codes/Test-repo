@@ -19,7 +19,13 @@ See [PROGRESS.md](PROGRESS.md) for what is built so far and what comes next.
 | `js/config.js` | App name and your Firebase web config. |
 | `js/firebase.js` | Connects to Firebase, signs in anonymously, server time helper. |
 | `js/ui.js` | Safe helpers for building the page (`el`, `mount`, `toast`). |
-| `js/app.js` | Starts the app. Right now it runs the setup check. |
+| `js/app.js` | Starts the app and picks the screen: home, lobby, or setup check. Rejoins your room after a refresh. |
+| `js/check.js` | The setup check screen. Open the site with `?check=1` to run it. |
+| `js/storage.js` | Remembers your nickname, avatar, theme and last room on this phone. |
+| `js/filter.js` | Cleans typed text and blocks rude nicknames. |
+| `js/room.js` | Creates and joins rooms, online/offline presence, kick, leave, automatic host promotion. |
+| `js/home.js` | Home screen: nickname, avatar picker, create or join. |
+| `js/lobby.js` | Lobby: room code, share buttons, live player list, ready, host controls. |
 | `icons/` | App icon, drawn in SVG. |
 | `firebase/database.rules.json` | Security rules you publish to Firebase. |
 | `firebase.json` | Settings for the local Firebase Emulator. |
@@ -38,6 +44,8 @@ See [PROGRESS.md](PROGRESS.md) for what is built so far and what comes next.
 7. **Allow your live website to log in.** Open **Authentication → Settings → Authorized domains**, click **Add domain**, type `notblank-codes.github.io` and click **Add**.
    - Type only the domain: no `https://`, no `/Test-repo` path. One entry covers every repo on that account.
    - `localhost` is already in the list, so local testing works without this step.
+
+To check everything is connected, open the site with `?check=1` at the end of the address (for example <http://localhost:8000/?check=1>).
 
 ### Is it safe to put the Firebase config in a public repo?
 
